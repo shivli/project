@@ -1,0 +1,467 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<mysql/mysql.h>
+
+static char *host="localhost";
+static char *user="root";
+static char *pass="ubuntu";
+static char *dbname="sample";
+
+unsigned int port=3306;
+static char *unix_socket=NULL;
+unsigned int flag=0;
+int i;
+int xyz,abc;
+char query1[60];
+char query2[60];
+char query3[60];
+char query4[60];
+char query5[60];
+char query6[100];
+char query7[80];
+char userpid[4];
+
+int main()
+{  
+	MYSQL_RES *res,*res1;
+	MYSQL_ROW row;
+	int ab,j=1, user_slot=0, user_dept=0, dept=0,distance=0;
+	int q=0;
+	char ch,op,s='E',s1='B';
+  
+   char login_pass[12] ="ubuntulinux";
+   char user_pass[12],usercarid[10],disablity[1];
+   char *fetchpid, *fetchslot, *fetch_dept ;
+   int len=strlen(login_pass);
+   int count1=0,numrows=0,count2=0;
+   int rows,num_rows=0;
+
+   MYSQL *conn1;
+   conn1=mysql_init(NULL);
+
+   
+   if(!(mysql_real_connect(conn1,host,user,pass,dbname,port,unix_socket,flag)))
+    {
+         fprintf(stderr,"\nError: %s [%d]\n",mysql_error(conn1),mysql_errno(conn1));
+         exit(1);
+    }
+   printf("Connection Successful!\n\n");
+   
+  mysql_query(conn1, "show tables");
+  res= mysql_store_result(conn1);
+  rows=mysql_num_rows(res);
+  if(rows!=3)
+  {
+  	mysql_query(conn1 ,"drop tables if exists parking_info,log_details");
+  	mysql_query(conn1,"drop table admin");
+  if(mysql_query(conn1,"create table admin(s_no INTEGER(3),p_id VARCHAR(4) PRIMARY KEY ,total_slots INTEGER(3), department INTEGER(2) not null)"))
+    {
+      fprintf(stderr,"\nError: %s [%d]\n",mysql_error(conn1),mysql_errno(conn1));
+         exit(1);
+    }
+
+   
+  if(mysql_query(conn1,"create table  parking_info(s_no INTEGER(3),p_id VARCHAR(4),slot_no INTEGER(2), status VARCHAR(4) , car_id varchar(10) unique ,disability varchar(1), department Integer(1) ,FOREIGN KEY (p_id )references admin(p_id))"))
+  	{
+      fprintf(stderr,"\nError: %s [%d]\n",mysql_error(conn1),mysql_errno(conn1));
+         exit(1);
+    }
+
+    if(mysql_query(conn1,"create table log_details(car_id varchar(10),slot_no Integer(3),p_id varchar(4),in_time datetime , out_time datetime , primary key(car_id,in_time ))"))
+  	{
+      fprintf(stderr,"\nError: %s [%d]\n",mysql_error(conn1),mysql_errno(conn1));
+         exit(1);
+    }
+
+    mysql_query(conn1,"insert into  admin  values (1, 'p1',30,1)");
+  
+    mysql_query(conn1,"insert into  admin  values (2, 'p2',30,2)");
+
+    mysql_query(conn1,"insert into  admin  values (3, 'p3',30,3)");
+    
+
+    for( i=1;i<=30;i++)
+    {
+           //sprintf(query1,"insert into parking_info values('%d','p1','%d','E',NULL,NULL);",i,j);
+            sprintf(query1,"insert into parking_info values ('%d','p1','%d','E',NULL,NULL,NULL);",i,j);
+           mysql_query(conn1,query1);
+           j++;
+
+    } 
+    j=1;
+    for( i=31;i<=60;i++)
+    {
+    	   sprintf(query2,"insert into parking_info values ('%d','p2','%d','E',NULL,NULL,NULL);",i,j);
+    	   mysql_query(conn1,query2);
+    	   j++;
+    }
+    j=1;
+    for( i=61;i<=90;i++)
+    {
+    	   sprintf(query3,"insert into parking_info values ('%d','p3','%d','E',NULL,NULL,NULL);",i,j);
+    	   mysql_query(conn1,query3);
+    	   j++;
+    }
+
+   }   
+       
+
+   	do{
+      printf(" Enter your choice to perform any of the actions \n");
+      printf(" 1: View Admin and Parking_Info table\n");
+      printf(" 2: Add the platforms and slots\n");
+      printf(" 3: Delete  the platforms and slots\n");
+      printf(" 4: Add CAR \n");
+      printf(" 5: Remove CAR and its details \n");
+      printf(" 6: View status of Slots\n");
+      scanf("%d", &ab);
+      printf(" You have opted for choice number %d \n",ab );
+      switch(ab)
+      {
+      	case 1:
+      	{
+      		printf("The Admin table is as follows\n");
+      		mysql_query(conn1,"select * from admin order by s_no asc");
+      		 res= mysql_store_result(conn1);
+             if(res)
+            {
+               numrows=mysql_num_rows(res);
+
+            }
+            printf("s_no\t p_id\t slots\t department\t \n");
+            while(row=mysql_fetch_row(res))
+           {
+             printf("%s\t %s\t %s\t %s\t\n",row[0],row[1],row[2],row[3]);
+           }
+
+
+      		printf("\nThe Parking_Info table is as follows\n");
+      		printf("s_no\t p_id\t slots\t status\t car_id\t disability\t \n");
+      		mysql_query(conn1,"select * from parking_info order by s_no asc");
+      		 res= mysql_store_result(conn1);
+             if(res)
+            {
+               numrows=mysql_num_rows(res);
+
+            }
+            while(row=mysql_fetch_row(res))
+           {
+             printf("%s\t %s\t %s\t %s\t %s\t %s\t \n",row[0],row[1],row[2],row[3],row[4],row[5]);
+           }
+      		break;
+      	}
+
+      	case 2:
+      	{   count1=0;
+      		printf("Enter administrator password to perform the following function: \n");
+      		scanf("%s",user_pass);
+      		for(i=0;i<len;i++)
+      		{
+      		  if (login_pass[i]!=user_pass[i])
+      		   {
+      		   	   count1=count1+1;
+      		   }
+      		}
+      		if(count1>0)
+      		{
+      			printf("Invalid Credentials \n");
+      			//goto A;
+      		
+      		}
+      		else
+      		{
+      			mysql_query(conn1, "select * from admin");
+                res= mysql_store_result(conn1);
+                num_rows=mysql_num_rows(res);
+                //printf("%d\n",num_rows );
+                printf("Enter the platform id  \n");
+      		    scanf("%s",userpid);
+      			printf("Enter the total number of slots for new platform id \n");
+      			scanf("%d",&user_slot);
+      			num_rows+=1;
+
+      			printf("Enter the department for the given platform. \n");
+      			printf(" 1. CIT \t 2. NON CIT \t 3. B.DES \n");
+      			scanf("%d",&dept);
+                printf(" enter the distance  for the platform to the department \n");
+                scanf("%d", &distance);
+                
+
+      			 // to enter the values in admin table takn from user.
+      			//fprintf(stderr,"\nError: %s [%d]\n",mysql_error(conn1),mysql_errno(conn1));
+      			
+      			if(dept==1||dept==2||dept==3)
+      			{
+
+      			 if(dept==1)
+      			 {
+      				sprintf(query6,"insert into dept_cit values ('%s','%d');", userpid,distance);
+      				mysql_query(conn1,query6);
+      			 }
+      			 else if(dept==2)
+      			 {
+      				sprintf(query6,"insert into dept_ncit values ('%s','%d');", userpid,distance);
+      				mysql_query(conn1,query6);
+      			 }
+      			 else if(dept==3)
+      			 {
+      				sprintf(query6,"insert into dept_des values ('%s','%d');", userpid,distance);
+      				mysql_query(conn1,query6);
+      			 }
+      			 
+                 sprintf(query4, "insert into admin values ('%d','%s','%d','%d');",num_rows ,userpid, user_slot,dept);
+                 mysql_query(conn1,query4);
+      			
+      			
+
+      			mysql_query(conn1, "select * from parking_info");
+                res= mysql_store_result(conn1);
+                num_rows=mysql_num_rows(res);
+                j=1;
+      			for( i=num_rows+1;j<=user_slot;j++,i++)
+               {
+                //sprintf(query3,"insert into parking_info values ('%d','p3','%d','E',NULL);",i,j);
+                 sprintf(query5,"insert into parking_info values ('%d','%s','%d','E',NULL,NULL,NULL);",i,userpid,j);
+                 mysql_query(conn1,query5);
+                 //printf("%s",query5);
+               }
+               printf("hello\n");
+              }
+               else
+               {
+      				printf("Invalid choice entered\n");
+      	
+      			} 
+      		 printf("chutiya sachi\n" );
+      		
+      		}
+      		break;
+
+      	}
+      	case 3:
+      	{
+
+      		count1=0;
+            printf("Enter administrator password to perform the following function: \n");
+      		scanf("%s",user_pass);		
+      		for(i=0;i<=len;i++)
+      		{
+      		  if (login_pass[i]!=user_pass[i])
+      		   {
+      		   	   count1=count1+1;
+      		   }
+      		}
+      		if(count1>0)
+      		{
+      			printf("Invalid Credentials");
+      		}
+      		else
+      		{   
+      			printf("Enter the platform id which you want to delete \n");
+      			scanf("%s",userpid);
+      			printf("Enter the department for the given platform. \n");
+      			printf(" 1. CIT \t 2. NON CIT \t 3. B.DES \n");
+      			scanf("%d",&dept);
+      			sprintf(query3,"select * from parking_info where p_id ='%s';",userpid);
+      			mysql_query(conn1,query3);
+      			res= mysql_store_result(conn1);
+                num_rows=mysql_num_rows(res);
+                //res1= mysql_store_result(conn1);
+               // num_rows=mysql_num_rows(res1);
+              /*while(row=mysql_fetch_row(res1))
+      	 	  {
+                 fetch_dept=row[3];
+              }*/
+              if(dept==1)
+              {
+              	sprintf(query7,"delete from dept_cit where p_id='%s';",userpid);
+              	mysql_query(conn1,query7);
+              	
+              }
+              else if(dept==2)
+              {
+              	sprintf(query7,"delete from dept_ncit where p_id='%s';",userpid);
+              	mysql_query(conn1,query7);
+              }
+              else if(dept==3)
+              {
+              	sprintf(query7,"delete from dept_des where p_id='%s';",userpid);
+              	mysql_query(conn1,query7);
+              }
+              else
+              {
+              	goto A;
+              }
+
+                if(num_rows>0)
+                {
+      			//sprintf(query4, "delete from parking_info  where p_id='%s';",userpid); 
+      			mysql_query(conn1,query4);
+      			
+      			//sprintf(query5, "delete from admin  where p_id='%s';",userpid);
+      			mysql_query(conn1,query5); 
+      		    printf("platform id and its slots are deleted from the tables.  \n");
+      		    }
+      		    else
+      		    {
+      			A:  printf(" no such entry for given data found . try again\n");
+      			}
+      			
+
+      		}
+          break;
+      	 }
+      	 case 4:
+      	 {
+            count2=0;
+            printf("Which department do you want to go \n");
+            scanf("%d",&dept);
+            printf("Whether you are disabled or not\n");
+            scanf("%s",disablity);
+      	 	printf("Enter the details of car \n");
+      	 	scanf("%s",usercarid);      	 	
+      	 	
+      	 	
+            
+              if(disablity[0]=='y'|| disablity[0]=='Y')
+              {
+              
+              	if(dept==1)
+              	{ 
+
+                 mysql_query(conn1,"select * from  dept_cit order by distance Desc ");
+                 res= mysql_store_result(conn1);
+                 while(row=mysql_fetch_row(res))
+                  {
+                    fetchpid=row[0];
+                  }
+					printf("%s",fetchpid);                   
+      	 	    
+      	 	  	sprintf(query4,"select * from parking_info where status='%c' AND  p_id='%s' limit 1;",s,fetchpid);
+      	 	  	printf("%s",query4);
+                mysql_query(conn1,query4);
+                res= mysql_store_result(conn1);
+                num_rows=mysql_num_rows(res);
+                printf("\n%d\n",num_rows);
+                if(num_rows > 0){
+
+                
+      	 	    while(row=mysql_fetch_row(res))
+                 {
+                 	printf("in while");
+                fetchslot=row[2];
+            
+ 		                }
+      	 	 						printf("%s",fetchslot);                   
+  
+             
+             }
+             else{
+             	printf("in break");
+             	break;
+             }
+         }
+           }
+              /*if((usercarid[0]=='u'||usercarid[0]=='U')&&(usercarid[1]=='k'||usercarid[1]=='K'))
+   				{
+                     if((usercarid[2]%1==0)&&(usercarid[3]%1==0))
+                     {
+                     	sprintf(query5,"update parking_info set status ='%c', car_id ='%s' where p_id='%s' AND slot_no='%s';", s1,usercarid,fetchpid,fetchslot);
+                        mysql_query(conn1,query5);
+                        printf("Your car details are updated successfully at %s platform  %s slot number\n",fetchpid,fetchslot);
+                        sprintf(query6,"insert into log_details values('%s','%s','%s',NOW(),NULL);",usercarid,fetchslot,fetchpid);
+                        mysql_query(conn1,query6);*/
+                       /* sprintf(query6,"DELIMITER$$ CREATE TRIGGER Log_insert AFTER UPDATE ON parking_info FOR EACH ROW BEGIN INSERT INTO log_details
+                         SET action = 'update', car_id = '%s', slot_no = '%s', p_id='%s', in_time=NOW(); END$$ DELIMITER ;",usercarid,fetchslot,fetchpid);
+                        mysql_query(conn1,query6);
+                        printf("sex");*/
+                     //}
+   				//}
+   				else {
+   					printf("invalid car id\n");
+   				}
+                     break;      	 	
+      	 } 
+      	 
+      	 case 5:
+      	 {
+           // count2=0;
+      	 	printf("Enter the details of car \n");
+      	 	scanf("%s",usercarid);      	 	
+      	 	
+      	 	sprintf(query4,"select * from parking_info where car_id='%s' ;",usercarid);
+            mysql_query(conn1,query4);
+      	 	res= mysql_store_result(conn1);
+      	 	num_rows=mysql_num_rows(res);
+      	 	
+                     	sprintf(query5,"delete from parking_info where car_id ='%s' ;", usercarid);
+                        mysql_query(conn1,query5);
+                        sprintf(query6,"update log_details  set out_time= NOW()  where car_id='%s';",usercarid);
+                        mysql_query(conn1,query6);
+
+             
+                       /* sprintf(query6,"DELIMITER$$ CREATE TRIGGER Log_insert AFTER UPDATE ON parking_info FOR EACH ROW BEGIN INSERT INTO log_details
+                         SET action = 'update', car_id = '%s', slot_no = '%s', p_id='%s', in_time=NOW(); END$$ DELIMITER ;",usercarid,fetchslot,fetchpid);
+                        mysql_query(conn1,query6);
+                        printf("sex");*/
+   			//	else {
+   			//		printf("invalid car id\n");
+   			//	}
+                break;      	 	
+      	 }
+
+          
+
+      	 case 6:
+      	{
+      		printf("Select the option\n");
+      		printf("1: Booked Slots\n");
+      		printf("2: Vacant Slots\n");
+      		scanf("%d", &abc);
+      		printf(" you have opted for choice number %d \n",abc );
+      		switch(abc)
+      		{
+      			case 1:
+		     {
+      		     mysql_query(conn1,"select * from parking_info where status = 'B';");
+      		     res= mysql_store_result(conn1);
+           
+                 while(row=mysql_fetch_row(res))
+                 {
+                   printf("%s\t %s\t %s\t %s\t %s\t \n",row[0],row[1],row[2],row[3],row[4]);
+                  }
+              break;
+       		}
+       		case 2:
+			 {
+      		   mysql_query(conn1,"select * from parking_info where status = 'E';");
+      		   res= mysql_store_result(conn1);
+               if(res)
+                {
+                  numrows=mysql_num_rows(res);
+                  printf("%d\n", numrows );
+
+                }
+              while(row=mysql_fetch_row(res))
+               {
+                printf("%s\t %s\t %s\t %s\t  \n",row[0],row[1],row[2],row[3]);
+               }
+             
+       	   }	
+        }
+        break;
+      }
+    	 
+      	 default : 
+      		printf("Invalid choice entered \n");
+
+  }    
+    printf("Return to Menu : 0 Break : 1\n");
+    printf("pagal");
+    scanf("%d",&xyz);
+}
+
+while(xyz==0);
+   return EXIT_SUCCESS;
+}
